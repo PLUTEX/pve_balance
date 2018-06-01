@@ -35,7 +35,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
 
     target_ratio = sum(host.used_memory for host in hosts)
     target_ratio /= sum(host.total_memory for host in hosts if host not in exclude)
-    logger.debug(
+    logger.info(
         'Target memory ratio is {:.0%}',
         target_ratio,
     )
