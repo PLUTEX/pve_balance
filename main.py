@@ -2,7 +2,6 @@
 
 import logging
 import logging.config
-import os
 from time import sleep
 
 from proxmoxer import ProxmoxAPI
@@ -88,7 +87,7 @@ if __name__ == '__main__':
     config['pve']['host'] = args.host
 
     import yaml
-    with open(os.path.join(os.path.dirname(__file__), 'logging.yml')) as f:
+    with open('logging.yml') as f:
         log_config = yaml.safe_load(f)
     if args.loglevel:
         log_config['handlers']['console']['level'] = getattr(logging, args.loglevel.upper())
