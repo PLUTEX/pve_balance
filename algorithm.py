@@ -33,7 +33,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
         return migrations
 
     target_ratio = sum(host.used_memory for host in hosts)
-    target_ratio /= sum(host.memory for host in hosts if host not in exclude)
+    target_ratio /= sum(host.total_memory for host in hosts if host not in exclude)
     logger.debug(
         'Target memory ratio is {:.0%}',
         target_ratio,
@@ -52,7 +52,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
             host.memory_imbalance = 0
         else:
             # Otherwise, aim for same ratio of used memory everywhere
-            host.memory_imbalance = target_ratio * host.memory
+            host.memory_imbalance = target_ratio * host.total_memory
 
         host.memory_imbalance -= host.used_memory
 
@@ -78,10 +78,10 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
 
         # In case of a tie (see below criterion), prefer VMs with little
         # memory, as they migrate faster
-        vms = sorted(source_host.vms, key=attrgetter('memory'))
+        vms = sorted(source_host.vms, key=attrgetter('used_memory'))
 
         # Prefer migrating VMs that bring us closest to the target usage
-        vms.sort(key=lambda vm: abs(vm.memory + source_host.memory_imbalance))
+        vms.sort(key=lambda vm: abs(vm.used_memory + source_host.memory_imbalance))
 
         for vm in vms:
             if vm in (migration.vm for migration in migrations):
@@ -91,18 +91,21 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
                 )
                 continue
 
-            if vm.memory > -source_host.memory_imbalance + threshold:
+            if vm.used_memory == 0:
+                continue
+
+            if vm.used_memory > -source_host.memory_imbalance + threshold:
                 logger.debug(
-                    "VM {0.id} (memory={0.memory!b}) overshoots source "
+                    "VM {0.id} (memory={0.used_memory!b}) overshoots source "
                     "host's imbalance of {1.memory_imbalance!b} by more "
                     "than {2!b}",
                     vm, source_host, threshold,
                 )
                 continue
 
-            if vm.memory > target_host.memory_imbalance + threshold:
+            if vm.used_memory > target_host.memory_imbalance + threshold:
                 logger.debug(
-                    "VM {0.id} (memory={0.memory!b}) overshoots target "
+                    "VM {0.id} (memory={0.used_memory!b}) overshoots target "
                     "host's imbalance of {1.memory_imbalance!b} by more "
                     "than {2!b}",
                     vm, target_host, threshold,
@@ -113,7 +116,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
                         "{2.name} despite overshooting memory imbalance by "
                         "{3!b}, because we need to empty {1.name}",
                         vm, source_host, target_host,
-                        vm.memory - target_host.memory_imbalance,
+                        vm.used_memory - target_host.memory_imbalance,
                     )
                 else:
                     continue
@@ -127,8 +130,8 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
                 target_host.name,
             )
             migrations.append(Migration(vm, target_host))
-            source_host.memory_imbalance += vm.memory
-            target_host.memory_imbalance -= vm.memory
+            source_host.memory_imbalance += vm.used_memory
+            target_host.memory_imbalance -= vm.used_memory
 
             # Break the VM loop to re-order hosts first
             break

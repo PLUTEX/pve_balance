@@ -18,11 +18,14 @@ def main(pve_config):
         for vm in proxmox.nodes(node['node']).qemu.get():
             vms.append(VM(
                 id=vm['vmid'],
-                memory=vm['mem'],
+                used_memory=vm['mem'],
+                total_memory=vm['maxmem'],
+                host=node['node'],
             ))
         hosts.append(Host(
             name=node['node'],
-            memory=node['maxmem'],
+            used_memory=node['mem'],
+            total_memory=node['maxmem'],
             vms=vms,
         ))
 
