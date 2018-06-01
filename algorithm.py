@@ -113,7 +113,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
             # This migration seems useful, remember it and update the memory
             # imbalance of the hosts associated
             logger.info(
-                "Planning migration of VM {} from host {} to name {}",
+                "Planning migration of VM {} from host {} to host {}",
                 vm.id,
                 source_host.name,
                 target_host.name,
