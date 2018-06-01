@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 
 import logging
+import logging.config
+import os
 from time import sleep
 
 from proxmoxer import ProxmoxAPI
@@ -43,15 +45,18 @@ def main(pve_config, dry=False, exclude_names=[]):
         if node['node'] in exclude_names:
             exclude.append(hosts[-1])
 
-    for migration in calculate_migrations(hosts, exclude):
+    migrations = calculate_migrations(hosts, exclude)
+
+    if dry:
+        logger.info("Terminating due to dry mode.")
+        return
+
+    for migration in migrations:
         logger.info(
             "Migrating VM {0.vm.id} ({0.vm.used_memory!b}) from host "
             "{0.vm.host} to host {0.target_host.name}.",
             migration,
         )
-
-        if dry:
-            continue
 
         upid = proxmox.nodes(migration.vm.host).qemu(migration.vm.id).migrate.post(
             target=migration.target_host.name,
@@ -75,12 +80,19 @@ if __name__ == '__main__':
         description='Balance VMs in a Proxmox Virtual Environment cluster.'
     )
     parser.add_argument('host')
-    parser.add_argument('--loglevel', metavar="INFO", default='info')
+    parser.add_argument('--loglevel', metavar="LEVEL")
     parser.add_argument('--dry', action='store_true')
     parser.add_argument('--exclude', action='append', default=[])
     args = parser.parse_args()
 
     config['pve']['host'] = args.host
-    logging.basicConfig(level=getattr(logging, args.loglevel.upper()))
+
+    import yaml
+    with open(os.path.join(os.path.dirname(__file__), 'logging.yml')) as f:
+        log_config = yaml.safe_load(f)
+    if args.loglevel:
+        log_config['handlers']['console']['level'] = getattr(logging, args.loglevel.upper())
+        log_config['loggers'] = {}
+    logging.config.dictConfig(log_config)
 
     main(config['pve'], dry=args.dry, exclude_names=args.exclude)

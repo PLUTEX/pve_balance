@@ -16,7 +16,7 @@ class ByteFormatter(Formatter):
         if self.suffix == 'B':
             format_spec = '.0f'
         elif self.suffix:
-            format_spec = '.3g'
+            format_spec = '.2f'
 
         result = super().format_field(value, format_spec)
 
