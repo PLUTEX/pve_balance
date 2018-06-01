@@ -70,6 +70,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
         # Migrate from the most over-staffed to the most under-staffed host
         source_host = hosts[-1]
         target_host = hosts[0]
+        assert target_host not in exclude
         logger.debug(
             'Trying migrating from host {} to host {}',
             source_host.name,
@@ -147,10 +148,12 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
         sort_max_imbalance(hosts),
     )
     for host in exclude:
-        if host.memory_imbalance < -threshold:
+        rem = frozenset(host.vms) - {migration.vm for migration in migrations}
+        if rem:
             logger.warning(
-                'Terminating without fully emptying {0.name}!',
+                'Terminating without fully emptying {0.name}! The following VMs remain: {1!r}',
                 host,
+                rem
             )
 
     return migrations
