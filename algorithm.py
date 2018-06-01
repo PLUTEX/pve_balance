@@ -75,7 +75,15 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
             source_host.name,
             target_host.name,
         )
-        for vm in sorted(source_host.vms, key=attrgetter('memory'), reverse=True):
+
+        # In case of a tie (see below criterion), prefer VMs with little
+        # memory, as they migrate faster
+        vms = sorted(source_host.vms, key=attrgetter('memory'))
+
+        # Prefer migrating VMs that bring us closest to the target usage
+        vms.sort(key=lambda vm: abs(vm.memory + source_host.memory_imbalance))
+
+        for vm in vms:
             if vm in (migration.vm for migration in migrations):
                 logger.debug(
                     'VM {} is already planned for migration, ignoring it',

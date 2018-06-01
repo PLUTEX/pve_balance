@@ -29,7 +29,7 @@ class TestCase1(unittest.TestCase):
         ]
         self.assertEqual(
             calculate_migrations(hosts),
-            [Migration(self.vm_sets[0][1], hosts[1])]
+            [Migration(self.vm_sets[0][0], hosts[1])]
         )
 
     def test_little_imbalanced(self):
