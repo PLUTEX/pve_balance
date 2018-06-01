@@ -77,7 +77,7 @@ if __name__ == '__main__':
     parser.add_argument('host')
     parser.add_argument('--loglevel', metavar="INFO", default='info')
     parser.add_argument('--dry', action='store_true')
-    parser.add_argument('--exclude', action='append')
+    parser.add_argument('--exclude', action='append', default=[])
     args = parser.parse_args()
 
     config['pve']['host'] = args.host
