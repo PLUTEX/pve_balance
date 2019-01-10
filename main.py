@@ -57,10 +57,11 @@ def main(pve_config, dry=False, exclude_names=[]):
             migration,
         )
 
-        upid = proxmox.nodes(migration.vm.host).qemu(migration.vm.id).migrate.post(
-            target=migration.target_host.name,
-            online=1,
-        )
+        upid = proxmox.nodes(migration.vm.host).qemu(migration.vm.id).migrate.post(**{
+            "target": migration.target_host.name,
+            "online": 1,
+            "with-local-disks": 1,
+        })
 
         logger.info("Waiting for completion of task {}", upid)
 
