@@ -14,12 +14,6 @@ from helper import get_logger
 logger = get_logger(__name__)
 
 
-def get_task(proxmox, upid):
-    for task in proxmox.cluster.tasks.get():
-        if task["upid"] == upid:
-            return task
-
-
 def hosts_in_migrations(migrations):
     yield from (migration.vm.host for migration in migrations)
     yield from (migration.target_host for migration in migrations)
@@ -98,9 +92,12 @@ def main(pve_config, dry=False, exclude_names=[]):
 
             num_running = len(running)
             while len(running) == num_running:
-                for task in tuple(running.keys()):
-                    if "endtime" in get_task(proxmox, task):
-                        del running[task]
+                for task in proxmox.cluster.tasks.get():
+                    if "endtime" in task:
+                        try:
+                            del running[task["upid"]]
+                        except KeyError:
+                            pass
                 if len(running) == num_running:
                     sleep(1)
 
