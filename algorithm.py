@@ -38,16 +38,6 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
         host.total_memory for host in hosts
         if host not in exclude
     )
-    logger.info(
-        "Target memory ratio is {:.0%}",
-        target_ratio,
-    )
-
-    if target_ratio > 0.9:
-        logger.warning(
-            "Target memory ratio {:.0%} is over 90%",
-            target_ratio,
-        )
 
     # Calculate the initial memory imbalance
     for host in hosts:
@@ -61,6 +51,18 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
         host.memory_imbalance -= host.used_memory
 
     del host
+
+    logger.info(
+        "Target memory ratio is {:.0%}, starting memory imbalance is {!b}",
+        target_ratio,
+        sort_max_imbalance(hosts),
+    )
+
+    if target_ratio > 0.9:
+        logger.warning(
+            "Target memory ratio {:.0%} is over 90%",
+            target_ratio,
+        )
 
     # Avoid changing the collection outside this function
     hosts = list(hosts)
@@ -180,7 +182,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
 
     logger.info(
         "Terminating with a remaining memory imbalance of {!b}",
-        sort_max_imbalance(hosts),
+        max_imbalance(hosts),
     )
     for host in exclude:
         rem = frozenset(host.vms) - {migration.vm for migration in migrations}
