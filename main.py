@@ -20,6 +20,11 @@ def get_task(proxmox, upid):
             return task
 
 
+def hosts_in_migrations(migrations):
+    yield from (migration.vm.host for migration in migrations)
+    yield from (migration.target_host for migration in migrations)
+
+
 def main(pve_config, dry=False, exclude_names=[]):
     proxmox = ProxmoxAPI(**pve_config)
 
@@ -50,25 +55,54 @@ def main(pve_config, dry=False, exclude_names=[]):
         logger.info("Terminating due to dry mode.")
         return
 
-    for migration in migrations:
-        logger.info(
-            "Migrating VM {0.vm.id} ({0.vm.used_memory!b}) from host "
-            "{0.vm.host} to host {0.target_host}.",
-            migration,
-        )
+    running = {}
+    while migrations:
+        migrating_hosts = set(hosts_in_migrations(running.values()))
+        for i, migration in enumerate(migrations):
+            busy_hosts = \
+                {migration.vm.host, migration.target_host} & migrating_hosts
+            if busy_hosts:
+                logger.debug(
+                    "Postponing migration of VM {0.vm.id} , because {1} is "
+                    "busy",
+                    migration,
+                    tuple(busy_hosts)[0],
+                )
+                continue
 
-        vm = migration.vm
-        upid = proxmox.nodes(vm.host).qemu(vm.id).migrate.post(**{
-            "target": migration.target_host,
-            "online": 1,
-            "with-local-disks": 1,
-        })
-        del vm
+            logger.info(
+                "Migrating VM {0.vm.id} ({0.vm.used_memory!b}) from host "
+                "{0.vm.host} to host {0.target_host}.",
+                migration,
+            )
 
-        logger.info("Waiting for completion of task {}", upid)
+            vm = migration.vm
+            task = proxmox.nodes(vm.host).qemu(vm.id).migrate.post(**{
+                "target": migration.target_host,
+                "online": 1,
+                "with-local-disks": 1,
+            })
+            del vm
 
-        while "endtime" not in get_task(proxmox, upid):
-            sleep(1)
+            running[task] = migration
+            del migrations[i]
+            break
+        else:
+            # we iterated through the non-empty list of remaining migrations,
+            # meaning that all remaining migrations are currently blocked by
+            # running migrations
+            logger.info(
+                "Waiting for completion of one of {} tasks",
+                len(running),
+            )
+
+            num_running = len(running)
+            while len(running) == num_running:
+                for task in tuple(running.keys()):
+                    if "endtime" in get_task(proxmox, task):
+                        del running[task]
+                if len(running) == num_running:
+                    sleep(1)
 
 
 if __name__ == "__main__":
