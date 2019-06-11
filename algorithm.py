@@ -101,7 +101,7 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
             )
 
             for vm in vms:
-                if Migration(vm, source_host) in migrations:
+                if Migration(vm, source_host.name) in migrations:
                     logger.debug(
                         "VM {} is already planned for migration to {}, but "
                         "is now reconsidered!",
@@ -156,11 +156,11 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
                     target_host,
                 )
                 try:
-                    migrations.remove(Migration(vm, source_host))
+                    migrations.remove(Migration(vm, source_host.name))
                 except ValueError:
                     # no such migration planned, good!
                     pass
-                migrations.append(Migration(vm, target_host))
+                migrations.append(Migration(vm, target_host.name))
                 source_host.memory_imbalance += vm.used_memory
                 target_host.memory_imbalance -= vm.used_memory
 

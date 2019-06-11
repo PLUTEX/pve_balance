@@ -56,7 +56,7 @@ class TestCase1(unittest.TestCase):
         ]
         self.assertEqual(
             calculate_migrations(hosts),
-            [Migration(self.vm_sets[0][0], hosts[1])]
+            [Migration(self.vm_sets[0][0], hosts[1].name)]
         )
 
     def test_little_imbalanced(self):
@@ -103,8 +103,8 @@ class TestCase1(unittest.TestCase):
         self.assertEqual(
             calculate_migrations(hosts, exclude=[hosts[1]]),
             [
-                Migration(self.vm_sets[1][0], hosts[2]),
-                Migration(self.vm_sets[2][0], hosts[0]),
+                Migration(self.vm_sets[1][0], hosts[2].name),
+                Migration(self.vm_sets[2][0], hosts[0].name),
             ]
         )
 
@@ -517,10 +517,10 @@ class TestCase2(unittest.TestCase):
             source_host.used_memory -= migration.vm.used_memory
             target_host = next(
                 host for host in hosts
-                if host.name == migration.target_host.name
+                if host.name == migration.target_host
             )
             target_host.vms.append(
-                VM(*migration.vm[:-1], host=migration.target_host.name)
+                VM(*migration.vm[:-1], host=migration.target_host)
             )
             target_host.used_memory += migration.vm.used_memory
         migrations2 = calculate_migrations(hosts)

@@ -53,13 +53,13 @@ def main(pve_config, dry=False, exclude_names=[]):
     for migration in migrations:
         logger.info(
             "Migrating VM {0.vm.id} ({0.vm.used_memory!b}) from host "
-            "{0.vm.host} to host {0.target_host.name}.",
+            "{0.vm.host} to host {0.target_host}.",
             migration,
         )
 
         vm = migration.vm
         upid = proxmox.nodes(vm.host).qemu(vm.id).migrate.post(**{
-            "target": migration.target_host.name,
+            "target": migration.target_host,
             "online": 1,
             "with-local-disks": 1,
         })
