@@ -140,10 +140,12 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
                 # This migration seems useful, remember it and update the memory
                 # imbalance of the hosts associated
                 logger.info(
-                    "Planning migration of VM {} from host {} to host {}",
-                    vm.id,
-                    source_host.name,
-                    target_host.name,
+                    "Planning migration of VM {0.id} "
+                    "(memory={0.used_memory!b}) from host {1.name} to host "
+                    "{2.name}",
+                    vm,
+                    source_host,
+                    target_host,
                 )
                 try:
                     migrations.remove(Migration(vm, source_host))
