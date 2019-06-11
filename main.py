@@ -28,7 +28,7 @@ def main(pve_config, dry=False, exclude_names=[]):
 
     for node in proxmox.nodes.get():
         vms = []
-        for vm in proxmox.nodes(node["node"]).qemu.get():
+        for vm in proxmox.nodes(node["node"]).qemu.get(full=1):
             vms.append(VM(
                 id=vm["vmid"],
                 used_memory=vm["mem"],
