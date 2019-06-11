@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 def get_task(proxmox, upid):
     for task in proxmox.cluster.tasks.get():
-        if task['upid'] == upid:
+        if task["upid"] == upid:
             return task
 
 
@@ -28,20 +28,20 @@ def main(pve_config, dry=False, exclude_names=[]):
 
     for node in proxmox.nodes.get():
         vms = []
-        for vm in proxmox.nodes(node['node']).qemu.get():
+        for vm in proxmox.nodes(node["node"]).qemu.get():
             vms.append(VM(
-                id=vm['vmid'],
-                used_memory=vm['mem'],
-                total_memory=vm['maxmem'],
-                host=node['node'],
+                id=vm["vmid"],
+                used_memory=vm["mem"],
+                total_memory=vm["maxmem"],
+                host=node["node"],
             ))
         hosts.append(Host(
-            name=node['node'],
-            used_memory=node['mem'],
-            total_memory=node['maxmem'],
+            name=node["node"],
+            used_memory=node["mem"],
+            total_memory=node["maxmem"],
             vms=vms,
         ))
-        if node['node'] in exclude_names:
+        if node["node"] in exclude_names:
             exclude.append(hosts[-1])
 
     migrations = calculate_migrations(hosts, exclude)
@@ -57,11 +57,13 @@ def main(pve_config, dry=False, exclude_names=[]):
             migration,
         )
 
-        upid = proxmox.nodes(migration.vm.host).qemu(migration.vm.id).migrate.post(**{
+        vm = migration.vm
+        upid = proxmox.nodes(vm.host).qemu(vm.id).migrate.post(**{
             "target": migration.target_host.name,
             "online": 1,
             "with-local-disks": 1,
         })
+        del vm
 
         logger.info("Waiting for completion of task {}", upid)
 
@@ -69,30 +71,41 @@ def main(pve_config, dry=False, exclude_names=[]):
             sleep(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from configparser import ConfigParser
-    from argparse import ArgumentParser
+    import argparse
+
+    def loglevel_to_int(level):
+        try:
+            return int(level)
+        except ValueError:
+            try:
+                return getattr(logging, level.upper())
+            except AttributeError:
+                raise argparse.ArgumentTypeError(
+                    "{} is not a valid loglevel".format(level)
+                )
 
     config = ConfigParser()
-    config.read('config.ini')
+    config.read("config.ini")
 
-    parser = ArgumentParser(
-        description='Balance VMs in a Proxmox Virtual Environment cluster.'
+    parser = argparse.ArgumentParser(
+        description="Balance VMs in a Proxmox Virtual Environment cluster."
     )
-    parser.add_argument('host')
-    parser.add_argument('--loglevel', metavar="LEVEL")
-    parser.add_argument('--dry', action='store_true')
-    parser.add_argument('--exclude', action='append', default=[])
+    parser.add_argument("host")
+    parser.add_argument("--loglevel", metavar="LEVEL", type=loglevel_to_int)
+    parser.add_argument("--dry", action="store_true")
+    parser.add_argument("--exclude", action="append", default=[])
     args = parser.parse_args()
 
-    config['pve']['host'] = args.host
+    config["pve"]["host"] = args.host
 
     import yaml
-    with open('logging.yml') as f:
+    with open("logging.yml") as f:
         log_config = yaml.safe_load(f)
     if args.loglevel:
-        log_config['handlers']['console']['level'] = getattr(logging, args.loglevel.upper())
-        log_config['loggers'] = {}
+        log_config["handlers"]["console"]["level"] = args.loglevel
+        log_config["loggers"] = {}
     logging.config.dictConfig(log_config)
 
-    main(config['pve'], dry=args.dry, exclude_names=args.exclude)
+    main(config["pve"], dry=args.dry, exclude_names=args.exclude)
