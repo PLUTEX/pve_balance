@@ -33,6 +33,9 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
     if not hosts:
         return migrations
 
+    # Avoid changing the collection outside this function
+    hosts = list(hosts)
+
     target_ratio = sum(host.used_memory for host in hosts)
     target_ratio /= sum(
         host.total_memory for host in hosts
@@ -63,9 +66,6 @@ def calculate_migrations(hosts, exclude=[], threshold=1024**3):
             "Target memory ratio {:.0%} is over 90%",
             target_ratio,
         )
-
-    # Avoid changing the collection outside this function
-    hosts = list(hosts)
 
     while sort_max_imbalance(hosts) > threshold:
         logger.debug(

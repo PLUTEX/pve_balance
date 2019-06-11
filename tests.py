@@ -431,74 +431,74 @@ class TestCase2(unittest.TestCase):
                 id="a0",
                 used_memory=3221945788,
                 total_memory=4294967296,
-                host="10"),
+                host="a"),
             VM(
                 id="a1",
                 used_memory=553793774,
                 total_memory=1073741824,
-                host="10"),
+                host="a"),
             VM(
                 id="a2",
                 used_memory=3377389963,
                 total_memory=4294967296,
-                host="10"),
+                host="a"),
             VM(
                 id="a3",
                 used_memory=531185564,
                 total_memory=1073741824,
-                host="10"),
+                host="a"),
             VM(
                 id="a4",
                 used_memory=538601985,
                 total_memory=1073741824,
-                host="10"),
+                host="a"),
         ]),
         Host(name="b", used_memory=40388665344, total_memory=75960639488, vms=[
             VM(
                 id="b0",
                 used_memory=538192584,
                 total_memory=1073741824,
-                host="11"),
+                host="b"),
             VM(
                 id="b1",
                 used_memory=1411996281,
                 total_memory=2147483648,
-                host="11"),
+                host="b"),
             VM(
                 id="b2",
                 used_memory=199685682,
                 total_memory=536870912,
-                host="11"),
+                host="b"),
             VM(
                 id="b3",
                 used_memory=1371761367,
                 total_memory=2147483648,
-                host="11"),
+                host="b"),
             VM(
                 id="b4",
                 used_memory=535095282,
                 total_memory=1073741824,
-                host="11"),
+                host="b"),
             VM(
                 id="b5",
                 used_memory=3230251060,
                 total_memory=4294967296,
-                host="11"),
+                host="b"),
             VM(
                 id="b6",
                 used_memory=3259391242,
                 total_memory=4294967296,
-                host="11"),
+                host="b"),
             VM(
                 id="b7",
                 used_memory=15715654848,
                 total_memory=17179869184,
-                host="11"),
+                host="b"),
             VM(
                 id="b8",
                 used_memory=3291853877,
                 total_memory=4294967296,
-                host="11"),
+                host="b"),
         ]),
         Host(name="c", used_memory=2987741184, total_memory=67538604032, vms=[
         ]),
@@ -507,7 +507,6 @@ class TestCase2(unittest.TestCase):
     def test_idempotence(self):
         hosts = list(self.hosts)
         migrations = calculate_migrations(hosts)
-        print(migrations)
         for migration in migrations:
             source_host = next(
                 host for host in hosts
@@ -523,8 +522,7 @@ class TestCase2(unittest.TestCase):
                 VM(*migration.vm[:-1], host=migration.target_host)
             )
             target_host.used_memory += migration.vm.used_memory
-        migrations2 = calculate_migrations(hosts)
-        print(migrations2)
+        calculate_migrations(hosts)
         self.assertEqual(calculate_migrations(hosts), [])
 
 
