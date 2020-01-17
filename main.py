@@ -133,7 +133,7 @@ if __name__ == "__main__":
         print("Could not read config from any of the following locations:", file=sys.stderr)
         for configpath in configpaths:
             print(configpath, file=sys.stderr)
-        os.exit(1)
+        sys.exit(1)
 
     parser = argparse.ArgumentParser(
         description="Balance VMs in a Proxmox Virtual Environment cluster."
