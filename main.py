@@ -105,6 +105,8 @@ def main(pve_config, dry=False, exclude_names=[]):
 if __name__ == "__main__":
     from configparser import ConfigParser
     import argparse
+    import sys
+    import os
 
     def loglevel_to_int(level):
         try:
@@ -117,8 +119,21 @@ if __name__ == "__main__":
                     "{} is not a valid loglevel".format(level)
                 )
 
+    configpaths = [
+        os.path.join(base, 'promo-balance.ini')
+        for base in (
+            '.',
+            os.getenv('APPDATA', os.getenv('XDG_CONFIG_HOME', os.path.join(os.getenv('HOME'), '.config'))),
+            '/etc',
+        )
+    ]
+
     config = ConfigParser()
-    config.read("config.ini")
+    if not config.read(configpaths):
+        print("Could not read config from any of the following locations:", file=sys.stderr)
+        for configpath in configpaths:
+            print(configpath, file=sys.stderr)
+        os.exit(1)
 
     parser = argparse.ArgumentParser(
         description="Balance VMs in a Proxmox Virtual Environment cluster."
