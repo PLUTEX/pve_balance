@@ -19,7 +19,25 @@ def hosts_in_migrations(migrations):
     yield from (migration.target_host for migration in migrations)
 
 
-def main(pve_config, dry=False, exclude_names=[]):
+def wait_for_tasks(proxmox, running):
+    logger.info(
+        "Waiting for completion of {} tasks",
+        len(running),
+    )
+
+    num_running = len(running)
+    while len(running) == num_running:
+        for task in proxmox.cluster.tasks.get():
+            if "endtime" in task:
+                try:
+                    del running[task["upid"]]
+                except KeyError:
+                    pass
+        if len(running) == num_running:
+            sleep(1)
+
+
+def main(pve_config, dry=False, wait=False, exclude_names=[]):
     proxmox = ProxmoxAPI(**pve_config)
 
     hosts = []
@@ -89,21 +107,7 @@ def main(pve_config, dry=False, exclude_names=[]):
             # we iterated through the non-empty list of remaining migrations,
             # meaning that all remaining migrations are currently blocked by
             # running migrations
-            logger.info(
-                "Waiting for completion of one of {} tasks",
-                len(running),
-            )
-
-            num_running = len(running)
-            while len(running) == num_running:
-                for task in proxmox.cluster.tasks.get():
-                    if "endtime" in task:
-                        try:
-                            del running[task["upid"]]
-                        except KeyError:
-                            pass
-                if len(running) == num_running:
-                    sleep(1)
+            wait_for_tasks(proxmox, running)
 
 
 if __name__ == "__main__":
@@ -143,9 +147,27 @@ if __name__ == "__main__":
         description="Balance VMs in a Proxmox Virtual Environment cluster."
     )
     parser.add_argument("host")
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="""
+            Exclude these cluster nodes from the target calculations.
+            This will migrate all VMs from these nodes onto others and not
+            migrate any VMs onto these nodes.
+        """
+    )
+    parser.add_argument(
+        "--dry",
+        action="store_true",
+        help="Just calculate the migrations, but don't execute them"
+    )
+    parser.add_argument(
+        "--wait",
+        action="store_true",
+        help="Wait for all migrations to finish before exiting",
+    )
     parser.add_argument("--loglevel", metavar="LEVEL")
-    parser.add_argument("--dry", action="store_true")
-    parser.add_argument("--exclude", action="append", default=[])
     args = parser.parse_args()
 
     config["pve"]["host"] = args.host
