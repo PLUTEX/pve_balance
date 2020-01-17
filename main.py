@@ -43,6 +43,7 @@ def main(pve_config, dry=False, exclude_names=[]):
         if node["node"] in exclude_names:
             exclude.append(hosts[-1])
 
+    logger.debug("Starting to calculate migrations")
     migrations = calculate_migrations(hosts, exclude)
 
     if dry:
@@ -139,19 +140,17 @@ if __name__ == "__main__":
         description="Balance VMs in a Proxmox Virtual Environment cluster."
     )
     parser.add_argument("host")
-    parser.add_argument("--loglevel", metavar="LEVEL", type=loglevel_to_int)
+    parser.add_argument("--loglevel", metavar="LEVEL")
     parser.add_argument("--dry", action="store_true")
     parser.add_argument("--exclude", action="append", default=[])
     args = parser.parse_args()
 
     config["pve"]["host"] = args.host
 
-    import yaml
-    with open("logging.yml") as f:
-        log_config = yaml.safe_load(f)
     if args.loglevel:
-        log_config["handlers"]["console"]["level"] = args.loglevel
-        log_config["loggers"] = {}
-    logging.config.dictConfig(log_config)
+        config["handler_console"]["level"] = args.loglevel.upper()
+        config["loggers"]["keys"] = "root"
+
+    logging.config.fileConfig(config, disable_existing_loggers=False)
 
     main(config["pve"], dry=args.dry, exclude_names=args.exclude)
