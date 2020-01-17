@@ -109,6 +109,10 @@ def main(pve_config, dry=False, wait=False, exclude_names=[]):
             # running migrations
             wait_for_tasks(proxmox, running)
 
+    if wait:
+        while len(running) > 0:
+            wait_for_tasks(proxmox, running)
+
 
 if __name__ == "__main__":
     from configparser import ConfigParser
