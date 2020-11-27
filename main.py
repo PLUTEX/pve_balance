@@ -182,4 +182,4 @@ if __name__ == "__main__":
 
     logging.config.fileConfig(config, disable_existing_loggers=False)
 
-    main(config["pve"], dry=args.dry, exclude_names=args.exclude)
+    main(config["pve"], wait=args.wait, dry=args.dry, exclude_names=args.exclude)
