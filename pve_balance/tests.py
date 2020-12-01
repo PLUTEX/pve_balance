@@ -1,7 +1,7 @@
 import unittest
 
-from model import Host, VM, Migration
-from algorithm import calculate_migrations
+from .model import Host, VM, Migration
+from .algorithm import calculate_migrations
 
 
 class TestCase1(unittest.TestCase):

@@ -1,8 +1,8 @@
 from itertools import product
 from operator import attrgetter
 
-from helper import get_logger
-from model import Migration
+from .helper import get_logger
+from .model import Migration
 
 logger = get_logger(__name__)
 
