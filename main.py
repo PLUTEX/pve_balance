@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 )
 
     configpaths = [
-        os.path.join(base, 'promo-balance.ini')
+        os.path.join(base, 'pve-balance.ini')
         for base in (
             '.',
             os.getenv('APPDATA', os.getenv('XDG_CONFIG_HOME', os.path.join(os.getenv('HOME'), '.config'))),
